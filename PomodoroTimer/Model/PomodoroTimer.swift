@@ -10,6 +10,28 @@ import UIKit
 
 protocol PomodoroTimerDelegate {
     func syncTime(timer: PomodoroTimer)
+    
+    func onWorkStart()
+    //func onWorkEnd()
+    
+    func onBreakStart()
+    //func onBreakEnd()
+    
+    func onReset()
+    
+    func onFinish()
+}
+
+extension PomodoroTimerDelegate {
+    func onWorkStart() {}
+    //func onWorkEnd() {}
+    
+    func onBreakStart() {}
+    //func onBreakEnd() {}
+    
+    func onReset() {}
+    
+    func onFinish() {}
 }
 
 
@@ -18,53 +40,67 @@ class PomodoroTimer {
     //NOTE: Stored in seconds
     let workTime: Double
     let breakTime: Double
-    //let longBreakTime: Double
     let numRounds: Int
+    let autoStart: Bool
+    
+    private(set) var timeRemaining: CFTimeInterval
+    private(set) var currentRound: Int = 0
+    private(set) var currentState: State = .Start
+    enum State {
+        case Start
+        
+        case Delay
+        case Work
+        case Break
+        
+        case Finished
+    }
+    
+    var delegate: PomodoroTimerDelegate?
     
     //TODO: DisplayLink is probably insane overkill for a pomodoro timer.
     //      I'm just copying what I had from ClockClone for the StopWatch
     private var displayLink: CADisplayLink!
     private var lastSyncTime: CFTimeInterval = 0
     
-    var delegate: PomodoroTimerDelegate?
-    
-    private(set) var timeRemaining: CFTimeInterval
-    private(set) var currentRound: Int = 0
-    private(set) var currentState: State = .Working
-    
-    enum State {
-        case Working
-        case Breaking
-    }
-    
     var minAndSecRemaining: (Int, Int) {
-        let minutes = Int(timeRemaining / 60.0)
-        let seconds = Int(timeRemaining) - (minutes * 60)
+        let time = round(timeRemaining)
+        let minutes = Int(time / 60.0)
+        let seconds = Int(time) - (minutes * 60)
         return (minutes, seconds)
     }
     
     var ratioRemaining: Double {
         switch currentState {
-        case .Working:
+        case .Start:
+            fallthrough
+        case .Delay:
+            return 1.0
+            
+        case .Work:
             return timeRemaining / workTime
-        case .Breaking:
+        case .Break:
             //TODO: LongBreak
             return timeRemaining / breakTime
+            
+        case .Finished:
+            return 0.0
         }
     }
     
     init(workTime: Int = 25,
          breakTime: Int = 5,
-         //longBreakTime: Int = 20,
-         numRounds: Int = 4)
+         numRounds: Int = 4,
+         autoStart: Bool = false)
     {
         //NOTE: Passed in minutes stored in seconds
-        self.workTime = Double(workTime * 60)
-        self.breakTime = Double(breakTime * 60)
+        self.workTime = 10.0//Double(workTime * 60) TODO: put this back
+        self.breakTime = 5.0//Double(breakTime * 60) TODO: put this back
         //self.longBreakTime = Double(longBreakTime * 60)
         self.numRounds = numRounds
+        self.autoStart = false
         
-        self.timeRemaining = Double(workTime) * 60.0
+        self.timeRemaining = self.workTime
         
         self.displayLink = CADisplayLink(target: self, selector: #selector(syncTime))
         self.displayLink.preferredFramesPerSecond = 15
@@ -72,17 +108,30 @@ class PomodoroTimer {
         self.displayLink.isPaused = true
     }
     
+    func reset() {
+        self.timeRemaining = self.workTime
+        self.currentRound = 0
+        self.currentState = .Start
+        self.displayLink.isPaused = true
+        
+        delegate?.onReset()
+    }
+    
     func start() {
-        lastSyncTime = CACurrentMediaTime()
-        displayLink.isPaused = false
+        switch currentState {
+        case .Finished:
+            break
+            
+        case .Start:
+            currentState = .Work
+            fallthrough
+        default:
+            lastSyncTime = CACurrentMediaTime()
+            displayLink.isPaused = false
+        }
     }
     
     func pause() {
-        displayLink.isPaused = true
-    }
-    
-    func stop() {
-        timeRemaining = 25 * 60
         displayLink.isPaused = true
     }
     
@@ -96,36 +145,64 @@ class PomodoroTimer {
         lastSyncTime = now
         
         //let prev = timeRemaining
-        timeRemaining -= interval
+        if currentState != .Delay, currentState != .Finished {
+            timeRemaining -= interval
+        }
         
         if timeRemaining <= 0.0 {
             switch currentState {
-            case .Working:
-                startBreak()
-            case .Breaking:
+            case .Work:
+                currentRound += 1
+                if currentRound == numRounds {
+                    currentState = .Finished
+                    timeRemaining = 0.0
+                    delegate?.onFinish()
+                    break
+                } else {
+                    startBreak()
+                }
+                
+            case .Break:
                 startWork()
+                
+            default:
+                break
             }
         }
         
-        if let delegate = delegate//,
-           //Int(prev) != Int(timeRemaining)
-        //TODO: Calling this repeatedly causes more work than necessary in the ViewController, but I want this to animate the ring. Can I fix this? Should I try?
-        {
-            delegate.syncTime(timer: self)
-        }
+        delegate?.syncTime(timer: self)
     }
     
     func startBreak() {
         timeRemaining = breakTime
-        currentRound += 1
-        currentState = .Breaking
-        //TODO: Callback
+        
+        if autoStart {
+            currentState = .Delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.currentState = .Break
+            }
+        } else {
+            self.currentState = .Break
+            displayLink.isPaused = true
+        }
+        
+        delegate?.onBreakStart()
     }
     
     func startWork() {
         timeRemaining = workTime
-        currentState = .Working
-        //TODO: Callback
+        
+        if autoStart {
+            currentState = .Delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.currentState = .Work
+            }
+        } else {
+            self.currentState = .Work
+            displayLink.isPaused = true
+        }
+        
+        delegate?.onWorkStart()
     }
     
 }

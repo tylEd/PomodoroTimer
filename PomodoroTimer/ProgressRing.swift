@@ -18,8 +18,18 @@ class ProgressRing: UIView {
         }
     }
     
+    func setColor(color: UIColor) {
+        let anim = CABasicAnimation(keyPath: "strokeColor")
+        anim.toValue = color.cgColor
+        anim.duration = 1
+        anim.fillMode = .forwards
+        anim.isRemovedOnCompletion = false
+        
+        colorRing.add(anim, forKey: "ring_color")
+    }
+    
     let lineWidth: CGFloat = 10
-
+    
     init() {
         super.init(frame: .zero)
         

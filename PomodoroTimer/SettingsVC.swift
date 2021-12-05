@@ -10,6 +10,8 @@ import UIKit
 class SettingsVC: UIViewController {
     
     var workTime: CustomStepper!
+    var breakTime: CustomStepper!
+    var rounds: CustomStepper!
     
     override func loadView() {
         view = UIScrollView()
@@ -34,32 +36,21 @@ class SettingsVC: UIViewController {
         breakLabel.text = "Break Time"
         breakLabel.font = .systemFont(ofSize: 20)
         view.addSubview(breakLabel)
-        let breakTime = CustomStepper()
+        
+        breakTime = CustomStepper()
         breakTime.minValue = 1
         breakTime.maxValue = 30
         breakTime.value = 5
         breakTime.delegate = self
         view.addSubview(breakTime)
         
-        let longLabel = UILabel()
-        longLabel.translatesAutoresizingMaskIntoConstraints = false
-        longLabel.text = "Long Break"
-        longLabel.font = .systemFont(ofSize: 20)
-        view.addSubview(longLabel)
-        let longBreakTime = CustomStepper()
-        longBreakTime.minValue = 10
-        longBreakTime.maxValue = 60
-        longBreakTime.value = 20
-        longBreakTime.step = 5
-        longBreakTime.delegate = self
-        view.addSubview(longBreakTime)
-        
         let roundsLabel = UILabel()
         roundsLabel.translatesAutoresizingMaskIntoConstraints = false
         roundsLabel.text = "Rounds"
         roundsLabel.font = .systemFont(ofSize: 20)
         view.addSubview(roundsLabel)
-        let rounds = CustomStepper()
+        
+        rounds = CustomStepper()
         rounds.value = 4
         rounds.delegate = self
         view.addSubview(rounds)
@@ -81,16 +72,8 @@ class SettingsVC: UIViewController {
             breakTime.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
             breakTime.topAnchor.constraint(equalTo: breakLabel.bottomAnchor, constant: 5),
             
-            // Long Break
-            longLabel.topAnchor.constraint(equalTo: breakTime.bottomAnchor, constant: 25),
-            longLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            
-            longBreakTime.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
-            longBreakTime.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
-            longBreakTime.topAnchor.constraint(equalTo: longLabel.bottomAnchor, constant: 5),
-            
             // Rounds
-            roundsLabel.topAnchor.constraint(equalTo: longBreakTime.bottomAnchor, constant: 25),
+            roundsLabel.topAnchor.constraint(equalTo: breakTime.bottomAnchor, constant: 25),
             roundsLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             
             rounds.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
@@ -114,14 +97,26 @@ class SettingsVC: UIViewController {
         buttonAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.systemPink]
         navigationItem.standardAppearance?.buttonAppearance = buttonAppearance
         navigationItem.compactAppearance?.buttonAppearance = buttonAppearance
+        
+        //TODO:
+        if let vc = presentingViewController as? ViewController {
+            //TODO: Is there a better way to get this data back into the view controller.
+            workTime.value = Int(vc.timer.workTime / 60.0)
+            breakTime.value = Int(vc.timer.breakTime / 60.0)
+            rounds.value = vc.timer.numRounds
+            //TODO: autoStart = vc.timer.autoStart
+        }
     }
     
     @objc func done() {
-        //if let presenter = presentingViewController as? ViewController {
-        if let _ = presentingViewController as? ViewController {
-            //TODO: Pass data back to the main ViewController
-            //TODO: Should / Could this be done with a segue completely in code?
-            print("Yep")
+        if let vc = presentingViewController as? ViewController {
+            //TODO: Is there a better way to get this data back into the view controller.
+            //      Maybe an onDone closure or something.
+            vc.timer = PomodoroTimer(workTime: workTime.value,
+                                     breakTime: breakTime.value,
+                                     numRounds: rounds.value,
+                                     autoStart: true) //TODO: Use a control for this
+            vc.timer.delegate = vc
         }
         
         dismiss(animated: true)
