@@ -9,8 +9,15 @@ import UIKit
 
 class ProgressRing: UIView {
     
+    let lineWidth: CGFloat = 10
+    
     private var bgRing = CAShapeLayer()
     private var colorRing = CAShapeLayer()
+    var ringColor = UIColor.systemPink {
+        didSet {
+            colorRing.strokeColor = ringColor.cgColor
+        }
+    }
     
     var progress = 1.0 {
         didSet {
@@ -18,50 +25,21 @@ class ProgressRing: UIView {
         }
     }
     
-    func setColor(color: UIColor) {
-        let anim = CABasicAnimation(keyPath: "strokeColor")
-        anim.toValue = color.cgColor
-        anim.duration = 1
-        anim.fillMode = .forwards
-        anim.isRemovedOnCompletion = false
-        
-        colorRing.add(anim, forKey: "ring_color")
-    }
-    
-    let lineWidth: CGFloat = 10
-    
     init() {
         super.init(frame: .zero)
         
         translatesAutoresizingMaskIntoConstraints = false
         
-        //TODO: This is not adaptive. Fix that.
-        bgRing.strokeColor = UIColor.secondarySystemBackground.cgColor
         bgRing.lineWidth = lineWidth
         bgRing.fillColor = UIColor.clear.cgColor
         bgRing.strokeEnd = 1
         layer.addSublayer(bgRing)
         
-        //TODO: This is not adaptive. Fix that for dark mode.
-        colorRing.strokeColor = UIColor.systemPink.cgColor
         colorRing.lineWidth = lineWidth
         colorRing.lineCap = .round
         colorRing.fillColor = UIColor.clear.cgColor
         colorRing.strokeEnd = progress
         layer.addSublayer(colorRing)
-        
-        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
-    }
-    
-    //TODO: Take me out.
-    @objc func handleTap() {
-        let anim = CABasicAnimation(keyPath: "strokeEnd")
-        anim.toValue = 0
-        anim.duration = 2
-        anim.fillMode = .forwards
-        anim.isRemovedOnCompletion = false
-        
-        colorRing.add(anim, forKey: "ring_anim")
     }
     
     required init(coder: NSCoder) {
@@ -69,6 +47,7 @@ class ProgressRing: UIView {
     }
     
     override func layoutSubviews() {
+        print("layout")
         let startAngle = -CGFloat.pi / 2
         let endAngle = (2 * CGFloat.pi) - (CGFloat.pi / 2)
         let radius = (min(bounds.width, bounds.height) / 2) - (lineWidth / 2)
@@ -77,6 +56,10 @@ class ProgressRing: UIView {
         
         bgRing.path = circlePath.cgPath
         colorRing.path = circlePath.cgPath
+        
+        //NOTE: layoutSubviews is called when appearance changes
+        bgRing.strokeColor = UIColor.secondarySystemBackground.cgColor
+        colorRing.strokeColor = ringColor.cgColor
     }
     
 }

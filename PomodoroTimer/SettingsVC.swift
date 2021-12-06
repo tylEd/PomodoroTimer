@@ -9,9 +9,23 @@ import UIKit
 
 class SettingsVC: UIViewController {
     
+    let timer: PomodoroTimer
+    var onDismiss: ((PomodoroTimer) -> Void)?
+    
+    init(timer: PomodoroTimer, onDismiss: ((PomodoroTimer) -> Void)? = nil) {
+        self.timer = timer
+        self.onDismiss = onDismiss
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     var workTime: CustomStepper!
     var breakTime: CustomStepper!
     var rounds: CustomStepper!
+    var autoStart: UISwitch!
     
     override func loadView() {
         view = UIScrollView()
@@ -24,11 +38,9 @@ class SettingsVC: UIViewController {
         view.addSubview(workLabel)
         
         workTime = CustomStepper()
-        workTime.minValue = 20
+        workTime.minValue = 5
         workTime.maxValue = 95
-        workTime.value = 25
         workTime.step = 5
-        workTime.delegate = self
         view.addSubview(workTime)
         
         let breakLabel = UILabel()
@@ -40,8 +52,6 @@ class SettingsVC: UIViewController {
         breakTime = CustomStepper()
         breakTime.minValue = 1
         breakTime.maxValue = 30
-        breakTime.value = 5
-        breakTime.delegate = self
         view.addSubview(breakTime)
         
         let roundsLabel = UILabel()
@@ -51,9 +61,18 @@ class SettingsVC: UIViewController {
         view.addSubview(roundsLabel)
         
         rounds = CustomStepper()
-        rounds.value = 4
-        rounds.delegate = self
         view.addSubview(rounds)
+        
+        let autoStartLabel = UILabel()
+        autoStartLabel.translatesAutoresizingMaskIntoConstraints = false
+        autoStartLabel.text = "Auto Start Next Round"
+        autoStartLabel.font = .systemFont(ofSize: 20)
+        view.addSubview(autoStartLabel)
+        
+        autoStart = UISwitch()
+        autoStart.translatesAutoresizingMaskIntoConstraints = false
+        autoStart.onTintColor = .systemPink
+        view.addSubview(autoStart)
         
         NSLayoutConstraint.activate([
             // Work
@@ -80,7 +99,14 @@ class SettingsVC: UIViewController {
             rounds.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
             rounds.topAnchor.constraint(equalTo: roundsLabel.bottomAnchor, constant: 5),
             
-            rounds.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            // Auto Start
+            autoStartLabel.topAnchor.constraint(equalTo: rounds.bottomAnchor, constant: 30),
+            autoStartLabel.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
+            autoStartLabel.trailingAnchor.constraint(equalTo: autoStart.leadingAnchor),
+            autoStartLabel.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            autoStart.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
+            autoStart.bottomAnchor.constraint(equalTo: autoStartLabel.bottomAnchor),
         ])
     }
     
@@ -90,46 +116,31 @@ class SettingsVC: UIViewController {
         title = "Settings"
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(done))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Cancel", style: .plain, target: self, action: #selector(cancel))
         navigationController?.navigationBar.prefersLargeTitles = true
         
-        //TODO: Not sure why this isn't working.
-        let buttonAppearance = UIBarButtonItemAppearance()
-        buttonAppearance.normal.titleTextAttributes = [.foregroundColor: UIColor.systemPink]
-        navigationItem.standardAppearance?.buttonAppearance = buttonAppearance
-        navigationItem.compactAppearance?.buttonAppearance = buttonAppearance
+        navigationItem.rightBarButtonItem?.tintColor = .systemPink
+        navigationItem.leftBarButtonItem?.tintColor = .systemPink
         
-        //TODO:
-        if let vc = presentingViewController as? ViewController {
-            //TODO: Is there a better way to get this data back into the view controller.
-            workTime.value = Int(vc.timer.workTime / 60.0)
-            breakTime.value = Int(vc.timer.breakTime / 60.0)
-            rounds.value = vc.timer.numRounds
-            //TODO: autoStart = vc.timer.autoStart
-        }
+        workTime.value = Int(timer.workTime / 60.0)
+        breakTime.value = Int(timer.breakTime / 60.0)
+        rounds.value = timer.numRounds
+        autoStart.setOn(timer.autoStart, animated: false)
     }
     
     @objc func done() {
-        if let vc = presentingViewController as? ViewController {
-            //TODO: Is there a better way to get this data back into the view controller.
-            //      Maybe an onDone closure or something.
-            vc.timer = PomodoroTimer(workTime: workTime.value,
-                                     breakTime: breakTime.value,
-                                     numRounds: rounds.value,
-                                     autoStart: true) //TODO: Use a control for this
-            vc.timer.delegate = vc
-        }
+        let timer = PomodoroTimer(workTime: workTime.value,
+                                  breakTime: breakTime.value,
+                                  numRounds: rounds.value,
+                                  autoStart: autoStart.isOn)
+        timer.delegate = self.timer.delegate
         
+        onDismiss?(timer)
         dismiss(animated: true)
     }
     
-}
-
-extension SettingsVC: CustomStepperDelegate {
-    
-    func valueDidChange(_ sender: CustomStepper) {
-        if sender == workTime {
-            print("yep")
-        }
+    @objc func cancel() {
+        dismiss(animated: true)
     }
     
 }

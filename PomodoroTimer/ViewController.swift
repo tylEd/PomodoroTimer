@@ -7,15 +7,16 @@
 
 import UIKit
 
-
 class ViewController: UIViewController {
     
-    var timer = PomodoroTimer(workTime: 1, breakTime: 1, /*longBreakTime: 1,*/ numRounds: 2)
+    var timer = PomodoroTimer()
     
     var roundLabel: UILabel!
-    var ring: ProgressRing!
+    var progressRing: ProgressRing!
     var timeLabel: UILabel!
     var startButton: UIButton!
+    var resetButton: UIButton!
+    var settingsButton: UIButton!
     
     override func loadView() {
         view = UIView()
@@ -29,57 +30,51 @@ class ViewController: UIViewController {
         stack.alignment = .center
         view.addSubview(stack)
         
+        // Timer Progress
         roundLabel = UILabel()
         roundLabel.translatesAutoresizingMaskIntoConstraints = false
         roundLabel.font = .systemFont(ofSize: 25)
-        roundLabel.text = "\(timer.currentRound) / \(timer.numRounds)"
+        //roundLabel.text = "\(timer.currentRound) / \(timer.numRounds)"
         roundLabel.textAlignment = .center
         roundLabel.textColor = .secondaryLabel
         stack.addArrangedSubview(roundLabel)
         
-        // Progress
-        ring = ProgressRing()
-        stack.addArrangedSubview(ring)
+        progressRing = ProgressRing()
+        stack.addArrangedSubview(progressRing)
         
         timeLabel = UILabel()
         timeLabel.translatesAutoresizingMaskIntoConstraints = false
-        timeLabel.text = "25:00"
+        //timeLabel.text = "25:00"
         timeLabel.font = .monospacedDigitSystemFont(ofSize: 50, weight: .thin)
         timeLabel.textAlignment = .center
-        timeLabel.textColor = .secondaryLabel//.systemPink
-        ring.addSubview(timeLabel)
+        timeLabel.textColor = .secondaryLabel
+        progressRing.addSubview(timeLabel)
         
-        // Start Button
-        var startConfig = UIButton.Configuration.gray()
-        startConfig.cornerStyle = .capsule
-        startConfig.baseForegroundColor = .secondaryLabel
+        // Buttons
+        var circleBtnConfig = UIButton.Configuration.gray()
+        circleBtnConfig.cornerStyle = .capsule
+        circleBtnConfig.baseForegroundColor = .secondaryLabel
         
-        startButton = UIButton(configuration: startConfig, primaryAction: nil)
+        startButton = UIButton(configuration: circleBtnConfig, primaryAction: nil)
         startButton.translatesAutoresizingMaskIntoConstraints = false
-        //startButton.setTitle("Start", for: .normal)
-        startButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
+        //startButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
         startButton.addTarget(self, action: #selector(startPressed), for: .touchUpInside)
         stack.addArrangedSubview(startButton)
         
         var resetConfig = UIButton.Configuration.plain()
         resetConfig.baseForegroundColor = .secondaryLabel
         
-        let resetButton = UIButton(configuration: resetConfig, primaryAction: nil)
+        resetButton = UIButton(configuration: resetConfig, primaryAction: nil)
         resetButton.translatesAutoresizingMaskIntoConstraints = false
         resetButton.setTitle("Reset", for: .normal)
         resetButton.addTarget(self, action: #selector(resetPressed), for: .touchUpInside)
         stack.addArrangedSubview(resetButton)
         
-        // Settings Button
-        var config = UIButton.Configuration.gray()
-        config.cornerStyle = .capsule
-        config.baseForegroundColor = .secondaryLabel
-        
-        let button = UIButton(configuration: config, primaryAction: nil)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.setImage(UIImage(systemName: "gear"), for: .normal)
-        button.addTarget(self, action: #selector(openSettings), for: .touchUpInside)
-        stack.addArrangedSubview(button)
+        settingsButton = UIButton(configuration: circleBtnConfig, primaryAction: nil)
+        settingsButton.translatesAutoresizingMaskIntoConstraints = false
+        settingsButton.setImage(UIImage(systemName: "gear"), for: .normal)
+        settingsButton.addTarget(self, action: #selector(openSettings), for: .touchUpInside)
+        stack.addArrangedSubview(settingsButton)
         
         
         NSLayoutConstraint.activate([
@@ -88,57 +83,42 @@ class ViewController: UIViewController {
             stack.leadingAnchor.constraint(equalTo: view.layoutMarginsGuide.leadingAnchor),
             stack.trailingAnchor.constraint(equalTo: view.layoutMarginsGuide.trailingAnchor),
             
-            timeLabel.centerXAnchor.constraint(equalTo: ring.centerXAnchor),
-            timeLabel.centerYAnchor.constraint(equalTo: ring.centerYAnchor),
+            progressRing.widthAnchor.constraint(equalTo: view.layoutMarginsGuide.widthAnchor),
+            progressRing.heightAnchor.constraint(equalTo: progressRing.widthAnchor),
             
-            //            startButton.heightAnchor.constraint(equalToConstant: 45),
-            //            startButton.widthAnchor.constraint(equalTo: view.layoutMarginsGuide.widthAnchor, multiplier: 0.5),
+            timeLabel.centerXAnchor.constraint(equalTo: progressRing.centerXAnchor),
+            timeLabel.centerYAnchor.constraint(equalTo: progressRing.centerYAnchor),
             
             startButton.widthAnchor.constraint(equalToConstant: 65),
-            startButton.heightAnchor.constraint(equalTo: button.widthAnchor),
+            startButton.heightAnchor.constraint(equalTo: startButton.widthAnchor),
             
-            button.widthAnchor.constraint(equalToConstant: 45),
-            button.heightAnchor.constraint(equalTo: button.widthAnchor),
-            
-            ring.widthAnchor.constraint(equalTo: view.layoutMarginsGuide.widthAnchor),
-            ring.heightAnchor.constraint(equalTo: ring.widthAnchor),
+            settingsButton.widthAnchor.constraint(equalToConstant: 45),
+            settingsButton.heightAnchor.constraint(equalTo: settingsButton.widthAnchor),
         ])
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         timer.delegate = self
-        self.syncTime(timer: timer)
+        
+        //TODO: Load timer settings from UserDefaults
+        
+        updateRoundsLabel()
+        updateButtons()
+        syncTime(timer: timer)
     }
     
     @objc func openSettings() {
-        let settings = UINavigationController(rootViewController: SettingsVC())
-        settings.modalPresentationStyle = .formSheet
+        let settingsVC = SettingsVC(timer: timer, onDismiss: { [weak self] timer in
+            self?.timer = timer
+            self?.timer.reset()
+            
+            //TODO: Save settings to UserDefaults
+        })
         
-        if let sheet = settings.sheetPresentationController {
-            sheet.prefersGrabberVisible = true
-        }
-        
-        present(settings, animated: true)
-    }
-    
-    @objc func startPressed() {
-        if timer.isPaused {
-            //NOTE: Could use a toggle function, but meh
-            timer.start()
-        } else {
-            timer.pause()
-        }
-        
-        updateStartButton()
-    }
-    
-    func updateStartButton() {
-        if timer.isPaused {
-            startButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
-        } else {
-            startButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
-        }
+        let settingsNav = UINavigationController(rootViewController: settingsVC)
+        settingsNav.modalPresentationStyle = .formSheet
+        present(settingsNav, animated: true)
     }
     
     @objc func resetPressed() {
@@ -147,7 +127,34 @@ class ViewController: UIViewController {
         ac.addAction(UIAlertAction(title: "Reset", style: .destructive) { [weak self] _ in
             self?.timer.reset()
         })
+        
         present(ac, animated: true)
+    }
+    
+    @objc func startPressed() {
+        settingsButton.alpha = 0
+        
+        if timer.isPaused {
+            timer.start()
+        } else {
+            timer.pause()
+        }
+        
+        updateButtons()
+    }
+    
+    func updateButtons() {
+        if timer.isPaused {
+            startButton.setImage(UIImage(systemName: "play.fill"), for: .normal)
+            resetButton.alpha = 1
+        } else {
+            startButton.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+            resetButton.alpha = 0
+        }
+    }
+    
+    func updateRoundsLabel() {
+        roundLabel.text = "\(timer.currentRound) / \(timer.numRounds)"
     }
     
 }
@@ -158,25 +165,29 @@ extension ViewController: PomodoroTimerDelegate {
         timeLabel.text = "\(minutes):\(String(format: "%02d", seconds))"
         
         let ratio = timer.ratioRemaining
-        ring.progress = ratio
+        progressRing.progress = ratio
     }
     
     func onWorkStart() {
-        ring.setColor(color: .systemPink)
-        roundLabel.text = "\(timer.currentRound) / \(timer.numRounds)"
-        updateStartButton()
+        progressRing.ringColor = .systemPink
+        
+        updateRoundsLabel()
+        updateButtons()
         syncTime(timer: timer)
     }
     
+    
     func onBreakStart() {
-        ring.setColor(color: .systemMint)
-        roundLabel.text = "\(timer.currentRound) / \(timer.numRounds)"
-        updateStartButton()
+        progressRing.ringColor = .systemMint
+        
+        updateRoundsLabel()
+        updateButtons()
         syncTime(timer: timer)
     }
     
     func onReset() {
         onWorkStart()
+        settingsButton.alpha = 1
     }
     
     func onFinish() {
@@ -189,4 +200,20 @@ extension ViewController: PomodoroTimerDelegate {
         
         present(ac, animated: true)
     }
+    
+    //NOTE: I didn't want to find royalty free alarm sound
+    //    func onWorkEnd() {
+    //    func onBreakEnd() {
+    //        var alarmSound: AVAudioPlayer?
+    //
+    //        let path = Bundle.main.path(forResource: "alarm.mp3", ofType: nil)!
+    //        let url = URL(fileURLWithPath: path)
+    //
+    //        do {
+    //            alarmSound = try AVAudioPlayer(contentsOf: url)
+    //            alarmSound?.play()
+    //        } catch {
+    //            // Couldn't load sound
+    //        }
+    //    }
 }

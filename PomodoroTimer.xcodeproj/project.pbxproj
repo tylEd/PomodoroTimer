@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2F0C6974275E9AD500F470F0 /* PomodoroTimerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F0C6973275E9AD500F470F0 /* PomodoroTimerDelegate.swift */; };
 		2F3563F727551763006A23BA /* SettingsVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F3563F627551763006A23BA /* SettingsVC.swift */; };
 		2F3563F9275540AB006A23BA /* CustomStepper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F3563F8275540AB006A23BA /* CustomStepper.swift */; };
 		2F3563FB27556C07006A23BA /* ProgressRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F3563FA27556C07006A23BA /* ProgressRing.swift */; };
@@ -19,6 +20,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		2F0C6973275E9AD500F470F0 /* PomodoroTimerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroTimerDelegate.swift; sourceTree = "<group>"; };
 		2F3563F627551763006A23BA /* SettingsVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsVC.swift; sourceTree = "<group>"; };
 		2F3563F8275540AB006A23BA /* CustomStepper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomStepper.swift; sourceTree = "<group>"; };
 		2F3563FA27556C07006A23BA /* ProgressRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressRing.swift; sourceTree = "<group>"; };
@@ -47,6 +49,7 @@
 			isa = PBXGroup;
 			children = (
 				2F3563FD2757BB73006A23BA /* PomodoroTimer.swift */,
+				2F0C6973275E9AD500F470F0 /* PomodoroTimerDelegate.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -72,8 +75,8 @@
 			children = (
 				2FA6DE312742F70A002D71DD /* AppDelegate.swift */,
 				2FA6DE332742F70A002D71DD /* SceneDelegate.swift */,
-				2FA6DE352742F70A002D71DD /* ViewController.swift */,
 				2F3563FC2757BB54006A23BA /* Model */,
+				2FA6DE352742F70A002D71DD /* ViewController.swift */,
 				2F3563F627551763006A23BA /* SettingsVC.swift */,
 				2F3563F8275540AB006A23BA /* CustomStepper.swift */,
 				2F3563FA27556C07006A23BA /* ProgressRing.swift */,
@@ -155,6 +158,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2F3563F9275540AB006A23BA /* CustomStepper.swift in Sources */,
+				2F0C6974275E9AD500F470F0 /* PomodoroTimerDelegate.swift in Sources */,
 				2FA6DE362742F70A002D71DD /* ViewController.swift in Sources */,
 				2F3563FE2757BB73006A23BA /* PomodoroTimer.swift in Sources */,
 				2F3563FB27556C07006A23BA /* ProgressRing.swift in Sources */,

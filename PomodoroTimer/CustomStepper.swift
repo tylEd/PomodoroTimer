@@ -7,16 +7,12 @@
 
 import UIKit
 
-protocol CustomStepperDelegate {
-    //TODO: This delegate might be unecessary, since the values can just be read from the steppers themselves.
-    func valueDidChange(_ sender: CustomStepper)
-}
 
 class CustomStepper: UIStackView {
     
     var step = 1
-    var minValue = 1
-    var maxValue = 10
+    var minValue = 1 { didSet { clampValue() } }
+    var maxValue = 10 { didSet { clampValue() } }
     var value = 5 {
         didSet {
             value = min(max(value, minValue), maxValue)
@@ -24,9 +20,11 @@ class CustomStepper: UIStackView {
         }
     }
     
-    private var label: UILabel!
+    func clampValue() {
+        value = min(max(value, minValue), maxValue)
+    }
     
-    var delegate: CustomStepperDelegate?
+    private var label: UILabel!
     
     init() {
         super.init(frame: .zero)
@@ -88,18 +86,10 @@ class CustomStepper: UIStackView {
     
     @objc func minus() {
         value -= step
-        
-        if let delegate = delegate {
-            delegate.valueDidChange(self)
-        }
     }
     
     @objc func plus() {
         value += step
-        
-        if let delegate = delegate {
-            delegate.valueDidChange(self)
-        }
     }
     
 }

@@ -7,34 +7,6 @@
 
 import UIKit
 
-
-protocol PomodoroTimerDelegate {
-    func syncTime(timer: PomodoroTimer)
-    
-    func onWorkStart()
-    //func onWorkEnd()
-    
-    func onBreakStart()
-    //func onBreakEnd()
-    
-    func onReset()
-    
-    func onFinish()
-}
-
-extension PomodoroTimerDelegate {
-    func onWorkStart() {}
-    //func onWorkEnd() {}
-    
-    func onBreakStart() {}
-    //func onBreakEnd() {}
-    
-    func onReset() {}
-    
-    func onFinish() {}
-}
-
-
 class PomodoroTimer {
     
     //NOTE: Stored in seconds
@@ -44,11 +16,9 @@ class PomodoroTimer {
     let autoStart: Bool
     
     private(set) var timeRemaining: CFTimeInterval
-    private(set) var currentRound: Int = 0
-    private(set) var currentState: State = .Start
+    private(set) var currentRound: Int
+    private(set) var currentState: State
     enum State {
-        case Start
-        
         case Delay
         case Work
         case Break
@@ -56,12 +26,10 @@ class PomodoroTimer {
         case Finished
     }
     
-    var delegate: PomodoroTimerDelegate?
-    
-    //TODO: DisplayLink is probably insane overkill for a pomodoro timer.
-    //      I'm just copying what I had from ClockClone for the StopWatch
     private var displayLink: CADisplayLink!
     private var lastSyncTime: CFTimeInterval = 0
+    
+    var delegate: PomodoroTimerDelegate?
     
     var minAndSecRemaining: (Int, Int) {
         let time = round(timeRemaining)
@@ -72,19 +40,16 @@ class PomodoroTimer {
     
     var ratioRemaining: Double {
         switch currentState {
-        case .Start:
-            fallthrough
         case .Delay:
             return 1.0
+            
+        case .Finished:
+            return 0.0
             
         case .Work:
             return timeRemaining / workTime
         case .Break:
-            //TODO: LongBreak
             return timeRemaining / breakTime
-            
-        case .Finished:
-            return 0.0
         }
     }
     
@@ -94,13 +59,14 @@ class PomodoroTimer {
          autoStart: Bool = false)
     {
         //NOTE: Passed in minutes stored in seconds
-        self.workTime = 10.0//Double(workTime * 60) TODO: put this back
-        self.breakTime = 5.0//Double(breakTime * 60) TODO: put this back
-        //self.longBreakTime = Double(longBreakTime * 60)
+        self.workTime = Double(workTime * 60)
+        self.breakTime = Double(breakTime * 60)
         self.numRounds = numRounds
-        self.autoStart = false
+        self.autoStart = autoStart
         
         self.timeRemaining = self.workTime
+        self.currentRound = 0
+        self.currentState = .Work
         
         self.displayLink = CADisplayLink(target: self, selector: #selector(syncTime))
         self.displayLink.preferredFramesPerSecond = 15
@@ -108,10 +74,14 @@ class PomodoroTimer {
         self.displayLink.isPaused = true
     }
     
+    deinit {
+        self.displayLink.invalidate()
+    }
+    
     func reset() {
         self.timeRemaining = self.workTime
         self.currentRound = 0
-        self.currentState = .Start
+        self.currentState = .Work
         self.displayLink.isPaused = true
         
         delegate?.onReset()
@@ -122,9 +92,6 @@ class PomodoroTimer {
         case .Finished:
             break
             
-        case .Start:
-            currentState = .Work
-            fallthrough
         default:
             lastSyncTime = CACurrentMediaTime()
             displayLink.isPaused = false
@@ -144,36 +111,55 @@ class PomodoroTimer {
         let interval = now - lastSyncTime
         lastSyncTime = now
         
-        //let prev = timeRemaining
-        if currentState != .Delay, currentState != .Finished {
+        switch currentState {
+        case .Work:
             timeRemaining -= interval
-        }
-        
-        if timeRemaining <= 0.0 {
-            switch currentState {
-            case .Work:
-                currentRound += 1
-                if currentRound == numRounds {
-                    currentState = .Finished
-                    timeRemaining = 0.0
-                    delegate?.onFinish()
-                    break
-                } else {
-                    startBreak()
-                }
-                
-            case .Break:
-                startWork()
-                
-            default:
-                break
+            if timeRemaining <= 0.0 {
+                endWork()
             }
+            
+        case .Break:
+            timeRemaining -= interval
+            if timeRemaining <= 0.0 {
+                endBreak()
+            }
+            
+        default:
+            break
         }
         
         delegate?.syncTime(timer: self)
     }
     
-    func startBreak() {
+    private func startWork() {
+        timeRemaining = workTime
+        
+        if autoStart {
+            currentState = .Delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                self.currentState = .Work
+            }
+        } else {
+            self.currentState = .Work
+            displayLink.isPaused = true
+        }
+        
+        delegate?.onWorkStart()
+    }
+    
+    private func endWork() {
+        currentRound += 1
+        if currentRound == numRounds {
+            currentState = .Finished
+            timeRemaining = 0.0
+            delegate?.onFinish()
+        } else {
+            delegate?.onWorkEnd()
+            startBreak()
+        }
+    }
+    
+    private func startBreak() {
         timeRemaining = breakTime
         
         if autoStart {
@@ -189,20 +175,9 @@ class PomodoroTimer {
         delegate?.onBreakStart()
     }
     
-    func startWork() {
-        timeRemaining = workTime
-        
-        if autoStart {
-            currentState = .Delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.currentState = .Work
-            }
-        } else {
-            self.currentState = .Work
-            displayLink.isPaused = true
-        }
-        
-        delegate?.onWorkStart()
+    private func endBreak() {
+        delegate?.onBreakEnd()
+        startWork()
     }
     
 }
