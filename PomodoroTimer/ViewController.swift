@@ -282,7 +282,6 @@ extension ViewController: UNUserNotificationCenterDelegate {
     
     func scheduleAlarm() {
         let center = UNUserNotificationCenter.current()
-        //clearAllNotifications()
         
         if !timer.isPaused {
             let title: String
