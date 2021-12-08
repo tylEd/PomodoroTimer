@@ -8,5 +8,5 @@ No external dependencies or submodules are used. Just clone and build with XCode
 
 ## Screenshots
 
-<img src="/Resources/Screenshots/work-screen.png?raw=true" alt="Light Mode" width="150"> <img src="/Resources/Screenshots/break-screen.png?raw=true" alt="Light Mode Break" width="150"> <img src="/Resources/Screenshots/work-screen-dark.png?raw=true" alt="Dark Mode" width="150">
+<img src="/Resources/Screenshots/work-screen.png?raw=true" alt="Light Mode" width="250"> <img src="/Resources/Screenshots/break-screen.png?raw=true" alt="Light Mode Break" width="250"> <img src="/Resources/Screenshots/work-screen-dark.png?raw=true" alt="Dark Mode" width="250">
 
