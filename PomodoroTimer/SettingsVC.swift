@@ -122,15 +122,15 @@ class SettingsVC: UIViewController {
         navigationItem.rightBarButtonItem?.tintColor = .systemPink
         navigationItem.leftBarButtonItem?.tintColor = .systemPink
         
-        workTime.value = Int(timer.workTime / 60.0)
-        breakTime.value = Int(timer.breakTime / 60.0)
+        workTime.value = timer.workMinutes
+        breakTime.value = timer.breakMinutes
         rounds.value = timer.numRounds
         autoStart.setOn(timer.autoStart, animated: false)
     }
     
     @objc func done() {
-        let timer = PomodoroTimer(workTime: workTime.value,
-                                  breakTime: breakTime.value,
+        let timer = PomodoroTimer(workMinutes: workTime.value,
+                                  breakMinutes: breakTime.value,
                                   numRounds: rounds.value,
                                   autoStart: autoStart.isOn)
         timer.delegate = self.timer.delegate

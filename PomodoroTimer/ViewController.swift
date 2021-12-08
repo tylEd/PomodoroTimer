@@ -151,6 +151,7 @@ class ViewController: UIViewController {
         
         updateButtons()
         
+        clearAllNotifications()
         scheduleAlarm()
     }
     
@@ -224,8 +225,8 @@ extension ViewController: PomodoroTimerDelegate {
 
 extension ViewController {
     
-    static let workTimeKey = "workTime"
-    static let breakTimeKey = "breakTime"
+    static let workMinutesKey = "workMinutes"
+    static let breakMinutesKey = "breakMinutes"
     static let numRoundsKey = "numRounds"
     static let autoStartKey = "autoStart"
     
@@ -233,22 +234,20 @@ extension ViewController {
         let defaults = UserDefaults.standard
         let keys = defaults.dictionaryRepresentation().keys
         
-        let workTime = keys.contains(ViewController.workTimeKey) ? defaults.integer(forKey: ViewController.workTimeKey) : 25
-        let breakTime = keys.contains(ViewController.workTimeKey) ? defaults.integer(forKey: ViewController.breakTimeKey) : 5
-        let numRounds = keys.contains(ViewController.workTimeKey) ? defaults.integer(forKey: ViewController.numRoundsKey) : 4
+        let workMinutes = keys.contains(ViewController.workMinutesKey) ? defaults.integer(forKey: ViewController.workMinutesKey) : 25
+        let breakMinutes = keys.contains(ViewController.breakMinutesKey) ? defaults.integer(forKey: ViewController.breakMinutesKey) : 5
+        let numRounds = keys.contains(ViewController.numRoundsKey) ? defaults.integer(forKey: ViewController.numRoundsKey) : 4
         let autoStart = defaults.bool(forKey: ViewController.autoStartKey)
         
-        timer = PomodoroTimer(workTime: workTime, breakTime: breakTime, numRounds: numRounds, autoStart: autoStart)
+        timer = PomodoroTimer(workMinutes: workMinutes, breakMinutes: breakMinutes, numRounds: numRounds, autoStart: autoStart)
         timer.delegate = self
     }
     
     func saveSettings() {
         let defaults = UserDefaults.standard
         
-        //TODO: This makes me think I might want to refactor how the workTime and breakTime are accessed. It would be better for then to be integers here.
-        //      I'm thinking a totalTime alongside timeRemaining, or just calculating the multiplication each time. Might make other code more clean too.
-        defaults.set(Int(timer.workTime / 60.0), forKey: ViewController.workTimeKey)
-        defaults.set(Int(timer.breakTime / 60.0), forKey: ViewController.breakTimeKey)
+        defaults.set(timer.workMinutes, forKey: ViewController.workMinutesKey)
+        defaults.set(timer.breakMinutes, forKey: ViewController.breakMinutesKey)
         defaults.set(timer.numRounds, forKey: ViewController.numRoundsKey)
         defaults.set(timer.autoStart, forKey: ViewController.autoStartKey)
     }
@@ -268,10 +267,9 @@ extension ViewController: UNUserNotificationCenterDelegate {
         
         center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             if granted {
-                //TODO: How to handle authorization
-                print("yay")
+                print("Auth granted")
             } else {
-                print("uh-oh")
+                print("Auth denied")
             }
         }
     }
@@ -284,7 +282,7 @@ extension ViewController: UNUserNotificationCenterDelegate {
     
     func scheduleAlarm() {
         let center = UNUserNotificationCenter.current()
-        clearAllNotifications()
+        //clearAllNotifications()
         
         if !timer.isPaused {
             let title: String
@@ -314,7 +312,7 @@ extension ViewController: UNUserNotificationCenterDelegate {
             content.categoryIdentifier = "alarm"
             content.sound = .default //TODO: Custom alarm sound.
             
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timer.timeRemaining, repeats: false)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timer.secondsRemaining, repeats: false)
             
             let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
             

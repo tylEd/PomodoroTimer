@@ -9,13 +9,15 @@ import UIKit
 
 class PomodoroTimer {
     
-    //NOTE: Stored in seconds
-    let workTime: Double
-    let breakTime: Double
+    let workMinutes: Int
+    let breakMinutes: Int
     let numRounds: Int
     let autoStart: Bool
     
-    private(set) var timeRemaining: CFTimeInterval
+    var workSeconds: Double { Double(workMinutes) * 60.0 }
+    var breakSeconds: Double { Double(breakMinutes) * 60.0 }
+    
+    private(set) var secondsRemaining: CFTimeInterval
     private(set) var currentRound: Int
     private(set) var currentState: State
     enum State {
@@ -30,7 +32,7 @@ class PomodoroTimer {
     var delegate: PomodoroTimerDelegate?
     
     var minAndSecRemaining: (Int, Int) {
-        let time = round(timeRemaining)
+        let time = round(secondsRemaining)
         let minutes = Int(time / 60.0)
         let seconds = Int(time) - (minutes * 60)
         return (minutes, seconds)
@@ -39,9 +41,9 @@ class PomodoroTimer {
     var ratioRemaining: Double {
         switch currentState {
         case .Work:
-            return timeRemaining / workTime
+            return secondsRemaining / workSeconds
         case .Break:
-            return timeRemaining / breakTime
+            return secondsRemaining / breakSeconds
         case .Finished:
             return 0.0
         }
@@ -49,18 +51,17 @@ class PomodoroTimer {
     
     var isLastRound: Bool { currentRound + 1 == numRounds }
     
-    init(workTime: Int = 25,
-         breakTime: Int = 5,
+    init(workMinutes: Int = 25,
+         breakMinutes: Int = 5,
          numRounds: Int = 4,
          autoStart: Bool = false)
     {
-        //NOTE: Passed in minutes stored in seconds
-        self.workTime = Double(workTime * 60)
-        self.breakTime = Double(breakTime * 60)
+        self.workMinutes = workMinutes
+        self.breakMinutes = breakMinutes
         self.numRounds = numRounds
         self.autoStart = autoStart
         
-        self.timeRemaining = self.workTime
+        self.secondsRemaining = Double(workMinutes) * 60.0
         self.currentRound = 0
         self.currentState = .Work
         
@@ -68,6 +69,8 @@ class PomodoroTimer {
         self.displayLink.preferredFramesPerSecond = 15
         self.displayLink.add(to: .main, forMode: .common)
         self.displayLink.isPaused = true
+        
+        reset()
     }
     
     deinit {
@@ -75,7 +78,7 @@ class PomodoroTimer {
     }
     
     func reset() {
-        self.timeRemaining = self.workTime
+        self.secondsRemaining = self.workSeconds
         self.currentRound = 0
         self.currentState = .Work
         self.displayLink.isPaused = true
@@ -109,14 +112,14 @@ class PomodoroTimer {
         
         switch currentState {
         case .Work:
-            timeRemaining -= interval
-            if timeRemaining <= 0.0 {
+            secondsRemaining -= interval
+            if secondsRemaining <= 0.0 {
                 endWork()
             }
             
         case .Break:
-            timeRemaining -= interval
-            if timeRemaining <= 0.0 {
+            secondsRemaining -= interval
+            if secondsRemaining <= 0.0 {
                 endBreak()
             }
             
@@ -129,7 +132,7 @@ class PomodoroTimer {
     
     private func startWork() {
         self.currentState = .Work
-        timeRemaining = workTime
+        secondsRemaining = workSeconds
         if !autoStart {
             displayLink.isPaused = true
         }
@@ -141,7 +144,7 @@ class PomodoroTimer {
         currentRound += 1
         if currentRound == numRounds {
             currentState = .Finished
-            timeRemaining = 0.0
+            secondsRemaining = 0.0
             delegate?.onFinish()
         } else {
             delegate?.onWorkEnd()
@@ -151,7 +154,7 @@ class PomodoroTimer {
     
     private func startBreak() {
         self.currentState = .Break
-        timeRemaining = breakTime
+        secondsRemaining = breakSeconds
         if !autoStart {
             displayLink.isPaused = true
         }
