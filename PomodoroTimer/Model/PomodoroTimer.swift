@@ -19,10 +19,8 @@ class PomodoroTimer {
     private(set) var currentRound: Int
     private(set) var currentState: State
     enum State {
-        case Delay
         case Work
         case Break
-        
         case Finished
     }
     
@@ -40,18 +38,16 @@ class PomodoroTimer {
     
     var ratioRemaining: Double {
         switch currentState {
-        case .Delay:
-            return 1.0
-            
-        case .Finished:
-            return 0.0
-            
         case .Work:
             return timeRemaining / workTime
         case .Break:
             return timeRemaining / breakTime
+        case .Finished:
+            return 0.0
         }
     }
+    
+    var isLastRound: Bool { currentRound + 1 == numRounds }
     
     init(workTime: Int = 25,
          breakTime: Int = 5,
@@ -132,15 +128,9 @@ class PomodoroTimer {
     }
     
     private func startWork() {
+        self.currentState = .Work
         timeRemaining = workTime
-        
-        if autoStart {
-            currentState = .Delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.currentState = .Work
-            }
-        } else {
-            self.currentState = .Work
+        if !autoStart {
             displayLink.isPaused = true
         }
         
@@ -160,15 +150,9 @@ class PomodoroTimer {
     }
     
     private func startBreak() {
+        self.currentState = .Break
         timeRemaining = breakTime
-        
-        if autoStart {
-            currentState = .Delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                self.currentState = .Break
-            }
-        } else {
-            self.currentState = .Break
+        if !autoStart {
             displayLink.isPaused = true
         }
         

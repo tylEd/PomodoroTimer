@@ -47,7 +47,6 @@ class ProgressRing: UIView {
     }
     
     override func layoutSubviews() {
-        print("layout")
         let startAngle = -CGFloat.pi / 2
         let endAngle = (2 * CGFloat.pi) - (CGFloat.pi / 2)
         let radius = (min(bounds.width, bounds.height) / 2) - (lineWidth / 2)

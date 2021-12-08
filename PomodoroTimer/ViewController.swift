@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import UserNotifications
 
 class ViewController: UIViewController {
     
@@ -101,19 +102,27 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         timer.delegate = self
         
-        //TODO: Load timer settings from UserDefaults
+        loadSettings()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(enterForground), name: UIApplication.didBecomeActiveNotification, object: nil)
+        UNUserNotificationCenter.current().delegate = self
         
         updateRoundsLabel()
         updateButtons()
         syncTime(timer: timer)
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        registerLocalNotifications()
+    }
+    
     @objc func openSettings() {
         let settingsVC = SettingsVC(timer: timer, onDismiss: { [weak self] timer in
             self?.timer = timer
             self?.timer.reset()
-            
-            //TODO: Save settings to UserDefaults
+            self?.saveSettings()
         })
         
         let settingsNav = UINavigationController(rootViewController: settingsVC)
@@ -141,6 +150,8 @@ class ViewController: UIViewController {
         }
         
         updateButtons()
+        
+        scheduleAlarm()
     }
     
     func updateButtons() {
@@ -159,7 +170,10 @@ class ViewController: UIViewController {
     
 }
 
+//MARK: Timer Events
+
 extension ViewController: PomodoroTimerDelegate {
+    
     func syncTime(timer: PomodoroTimer) {
         let (minutes, seconds) = timer.minAndSecRemaining
         timeLabel.text = "\(minutes):\(String(format: "%02d", seconds))"
@@ -174,8 +188,9 @@ extension ViewController: PomodoroTimerDelegate {
         updateRoundsLabel()
         updateButtons()
         syncTime(timer: timer)
+        
+        scheduleAlarm()
     }
-    
     
     func onBreakStart() {
         progressRing.ringColor = .systemMint
@@ -183,6 +198,8 @@ extension ViewController: PomodoroTimerDelegate {
         updateRoundsLabel()
         updateButtons()
         syncTime(timer: timer)
+        
+        scheduleAlarm()
     }
     
     func onReset() {
@@ -201,19 +218,112 @@ extension ViewController: PomodoroTimerDelegate {
         present(ac, animated: true)
     }
     
-    //NOTE: I didn't want to find royalty free alarm sound
-    //    func onWorkEnd() {
-    //    func onBreakEnd() {
-    //        var alarmSound: AVAudioPlayer?
-    //
-    //        let path = Bundle.main.path(forResource: "alarm.mp3", ofType: nil)!
-    //        let url = URL(fileURLWithPath: path)
-    //
-    //        do {
-    //            alarmSound = try AVAudioPlayer(contentsOf: url)
-    //            alarmSound?.play()
-    //        } catch {
-    //            // Couldn't load sound
-    //        }
-    //    }
+}
+
+//MARK: Load and save settings
+
+extension ViewController {
+    
+    static let workTimeKey = "workTime"
+    static let breakTimeKey = "breakTime"
+    static let numRoundsKey = "numRounds"
+    static let autoStartKey = "autoStart"
+    
+    func loadSettings() {
+        let defaults = UserDefaults.standard
+        let keys = defaults.dictionaryRepresentation().keys
+        
+        let workTime = keys.contains(ViewController.workTimeKey) ? defaults.integer(forKey: ViewController.workTimeKey) : 25
+        let breakTime = keys.contains(ViewController.workTimeKey) ? defaults.integer(forKey: ViewController.breakTimeKey) : 5
+        let numRounds = keys.contains(ViewController.workTimeKey) ? defaults.integer(forKey: ViewController.numRoundsKey) : 4
+        let autoStart = defaults.bool(forKey: ViewController.autoStartKey)
+        
+        timer = PomodoroTimer(workTime: workTime, breakTime: breakTime, numRounds: numRounds, autoStart: autoStart)
+        timer.delegate = self
+    }
+    
+    func saveSettings() {
+        let defaults = UserDefaults.standard
+        
+        //TODO: This makes me think I might want to refactor how the workTime and breakTime are accessed. It would be better for then to be integers here.
+        //      I'm thinking a totalTime alongside timeRemaining, or just calculating the multiplication each time. Might make other code more clean too.
+        defaults.set(Int(timer.workTime / 60.0), forKey: ViewController.workTimeKey)
+        defaults.set(Int(timer.breakTime / 60.0), forKey: ViewController.breakTimeKey)
+        defaults.set(timer.numRounds, forKey: ViewController.numRoundsKey)
+        defaults.set(timer.autoStart, forKey: ViewController.autoStartKey)
+    }
+    
+}
+
+//MARK: Notifications
+
+extension ViewController: UNUserNotificationCenterDelegate {
+    
+    @objc func enterForground() {
+        clearAllNotifications()
+    }
+    
+    func registerLocalNotifications() {
+        let center = UNUserNotificationCenter.current()
+        
+        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            if granted {
+                //TODO: How to handle authorization
+                print("yay")
+            } else {
+                print("uh-oh")
+            }
+        }
+    }
+    
+    func clearAllNotifications() {
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        center.removeAllDeliveredNotifications()
+    }
+    
+    func scheduleAlarm() {
+        let center = UNUserNotificationCenter.current()
+        clearAllNotifications()
+        
+        if !timer.isPaused {
+            let title: String
+            let body: String
+            
+            switch timer.currentState {
+            case .Work:
+                if timer.isLastRound {
+                    title = "Yay!"
+                    body = "You're all done!"
+                } else {
+                    title = "Break Time!"
+                    body = "Take it easy for a few."
+                }
+                
+            case .Break:
+                title = "Work Time"
+                body = "Let's get back to it."
+                
+            case .Finished:
+                return
+            }
+            
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.categoryIdentifier = "alarm"
+            content.sound = .default //TODO: Custom alarm sound.
+            
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timer.timeRemaining, repeats: false)
+            
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+            
+            center.add(request)
+        }
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .badge, .sound])
+    }
+    
 }

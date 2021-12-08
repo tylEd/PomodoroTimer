@@ -45,6 +45,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2F0C6975275FCBC300F470F0 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				2F3563F8275540AB006A23BA /* CustomStepper.swift */,
+				2F3563FA27556C07006A23BA /* ProgressRing.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		2F3563FC2757BB54006A23BA /* Model */ = {
 			isa = PBXGroup;
 			children = (
@@ -76,10 +85,9 @@
 				2FA6DE312742F70A002D71DD /* AppDelegate.swift */,
 				2FA6DE332742F70A002D71DD /* SceneDelegate.swift */,
 				2F3563FC2757BB54006A23BA /* Model */,
+				2F0C6975275FCBC300F470F0 /* Views */,
 				2FA6DE352742F70A002D71DD /* ViewController.swift */,
 				2F3563F627551763006A23BA /* SettingsVC.swift */,
-				2F3563F8275540AB006A23BA /* CustomStepper.swift */,
-				2F3563FA27556C07006A23BA /* ProgressRing.swift */,
 				2FA6DE3A2742F70A002D71DD /* Assets.xcassets */,
 				2FA6DE3C2742F70A002D71DD /* LaunchScreen.storyboard */,
 				2FA6DE3F2742F70A002D71DD /* Info.plist */,
@@ -308,7 +316,7 @@
 				DEVELOPMENT_TEAM = J9GJAN323Z;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PomodoroTimer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tomato;
+				INFOPLIST_KEY_CFBundleDisplayName = Pomodoro;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -337,7 +345,7 @@
 				DEVELOPMENT_TEAM = J9GJAN323Z;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PomodoroTimer/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tomato;
+				INFOPLIST_KEY_CFBundleDisplayName = Pomodoro;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
